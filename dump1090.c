@@ -156,6 +156,7 @@ struct {
     int fix_errors;                 /* Single bit error correction if true. */
     int check_crc;                  /* Only display messages with good CRC. */
     int raw;                        /* Raw output format. */
+    int print_timestamp;            /* Add a timestamp to raw output. */
     int debug;                      /* Debugging mode. */
     int net;                        /* Enable networking. */
     int net_only;                   /* Enable just networking. */
@@ -265,6 +266,7 @@ void modesInitConfig(void) {
     Modes.fix_errors = 1;
     Modes.check_crc = 1;
     Modes.raw = 0;
+    Modes.print_timestamp = 0;
     Modes.net = 0;
     Modes.net_only = 0;
     Modes.net_output_sbs_port = MODES_NET_OUTPUT_SBS_PORT;
@@ -1121,6 +1123,11 @@ void displayModesMessage(struct modesMessage *mm) {
         return;
     }
 
+    if (Modes.print_timestamp) {
+        /* Print the current timestamp */
+        printf("%lld ", mstime());
+    }
+
     /* Show the raw message. */
     printf("*");
     for (j = 0; j < mm->msgbits/8; j++) printf("%02x", mm->msg[j]);
@@ -1128,7 +1135,7 @@ void displayModesMessage(struct modesMessage *mm) {
 
     if (Modes.raw) {
         fflush(stdout); /* Provide data to the reader ASAP. */
-        return; /* Enough for --raw mode */
+        return; /* Enough for --raw and --raw-with-timestamp modes */
     }
 
     printf("CRC: %06x (%s)\n", (int)mm->crc, mm->crcok ? "ok" : "wrong");
@@ -2365,6 +2372,7 @@ void showHelp(void) {
 "--interactive-rows <num> Max number of rows in interactive mode (default: 15).\n"
 "--interactive-ttl <sec>  Remove from list if idle for <sec> (default: 60).\n"
 "--raw                    Show only messages hex values.\n"
+"--raw-with-timestamp     Show messages hex values prepended with a timestamp.\n"
 "--net                    Enable networking.\n"
 "--net-only               Enable just networking, no RTL device or file used.\n"
 "--net-ro-port <port>     TCP listening port for raw output (default: 30002).\n"
@@ -2438,6 +2446,9 @@ int main(int argc, char **argv) {
             Modes.check_crc = 0;
         } else if (!strcmp(argv[j],"--raw")) {
             Modes.raw = 1;
+        } else if (!strcmp(argv[j],"--raw-with-timestamp")) {
+            Modes.raw = 1;
+            Modes.print_timestamp = 1;
         } else if (!strcmp(argv[j],"--net")) {
             Modes.net = 1;
         } else if (!strcmp(argv[j],"--net-only")) {
